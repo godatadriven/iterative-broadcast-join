@@ -1,2 +1,6 @@
 *.class
 *.log
+.idea/
+metastore_db/
+target
+skewed-data/
