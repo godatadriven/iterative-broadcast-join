@@ -4,3 +4,4 @@
 metastore_db/
 target
 skewed-data/
+*.parquet
