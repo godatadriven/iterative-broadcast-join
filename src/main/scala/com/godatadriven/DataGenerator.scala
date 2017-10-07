@@ -1,14 +1,14 @@
 package com.godatadriven
 
 import breeze.stats.distributions.Exponential
-import com.godatadriven.Utils.getSpark
+import com.godatadriven.common.Config
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
 
 object DataGenerator {
 
   def buildTestset(): Unit = {
-    val spark = getSpark
+    val spark = Utils.getSpark
 
 
     def schema: StructType = {

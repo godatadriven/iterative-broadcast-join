@@ -1,12 +1,10 @@
 package com.godatadriven
 
-import com.godatadriven.Utils.getSpark
-
 object RunTest {
   def run() {
-    val spark = getSpark
+    val spark = Utils.getSpark
 
-    def registerTable(name: String) =
+    def registerTable(name: String): Unit =
       spark
         .read
         .load(s"table_$name.parquet")
