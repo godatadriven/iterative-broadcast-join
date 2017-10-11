@@ -15,10 +15,10 @@ object RunTest {
 
     spark.sql(
       """
-        |SELECT medium.key, COUNT(*)
+        |SELECT large.key, COUNT(medium.label)
         |FROM large
         |JOIN medium ON medium.key = large.key
-        |GROUP BY medium.key
+        |GROUP BY large.key
         |ORDER BY COUNT(*) DESC
       """.stripMargin).show(22)
   }

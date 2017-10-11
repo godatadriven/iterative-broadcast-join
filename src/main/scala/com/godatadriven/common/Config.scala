@@ -2,14 +2,14 @@ package com.godatadriven.common
 
 object Config {
   // The number of partitions
-  val numberOfPartitions: Int = 200
-
-  // The number of distinct key (upper bound)
-  val numberOfKeys: Int = Math.pow(10, 5).toInt
+  val numberOfPartitions: Int = 4000
 
   // The number of rows
-  val numberOfRows: Int = Math.pow(10, 10).toInt
+  val numberOfRows: Long = Math.pow(10, 9).toLong
+
+  // The number of keys
+  val numberOfKeys: Long = Math.pow(10, 5).toLong
 
   // Determines the skewness of the keys
-  val randomExponent = 19.25
+  val randomExponent: Int = 4
 }
