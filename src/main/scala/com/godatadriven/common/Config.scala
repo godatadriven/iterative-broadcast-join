@@ -5,10 +5,10 @@ object Config {
   val numberOfPartitions: Int = 4000
 
   // The number of rows
-  val numberOfRows: Long = Math.pow(10, 9).toLong
+  val numberOfKeys: Int = Math.pow(10, 7).toInt
 
-  // The number of keys
-  val numberOfKeys: Long = Math.pow(10, 5).toLong
+  // The number of rows
+  val skewnessExponent: Int = 4
 
   // Determines the skewness of the keys
   val randomExponent: Int = 4
