@@ -1,12 +1,10 @@
 package com.godatadriven
 
 import co.theasi.plotly._
+import com.godatadriven.DataGenerator.generateSkewedSequence
 import com.godatadriven.common.Config
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
-
-import scala.annotation.tailrec
-import scala.collection.mutable
 
 object DataGenerator {
 
@@ -44,14 +42,16 @@ object DataGenerator {
 
     import spark.implicits._
 
-    val skewedSequence = generateSkewedSequence(Config.numberOfKeys)
+    val skewedSeq = generateSkewedSequence(Config.numberOfKeys)
+
+    val skewedSequence =
+      (0 until Config.keysMultiplier).flatMap(_ => skewedSeq)
 
     val rdd = spark
       .sparkContext
       .parallelize(skewedSequence, Config.numberOfPartitions)
       .flatMap(pair => skewDistribution(pair._1, pair._2))
       .map(key => Row(key))
-      .repartition(Config.numberOfPartitions)
 
     val dfLarge = spark.createDataFrame(rdd, schema)
 

@@ -7,6 +7,8 @@ object Config {
   // The number of rows
   val numberOfKeys: Int = Math.pow(10, 7).toInt
 
+  val keysMultiplier: Int = Math.pow(10, 1).toInt
+
   // The number of rows
   val skewnessExponent: Int = 4
 

@@ -1,5 +1,8 @@
 package com.godatadriven
 
+import org.apache.spark.sql._
+import org.apache.spark.sql.functions._
+
 object RunTest {
   def run() {
     val spark = Utils.getSpark
@@ -15,11 +18,24 @@ object RunTest {
 
     spark.sql(
       """
-        |SELECT large.key, COUNT(medium.label)
+        |SELECT
+        | large.key           AS key,
+        | medium.label        AS label,
+        | medium.description  AS description
         |FROM large
         |JOIN medium ON medium.key = large.key
-        |GROUP BY large.key
-        |ORDER BY COUNT(*) DESC
-      """.stripMargin).show(22)
+      """.stripMargin)
+      .write
+      .mode(SaveMode.Overwrite)
+      .save("result.parquet")
+
+
+    spark
+      .read
+      .parquet("table_large.parquet")
+      .groupBy("key")
+      .count()
+      .orderBy(desc("count"))
+      .show(22)
   }
 }
