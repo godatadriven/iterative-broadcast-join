@@ -10,7 +10,7 @@ class TestDataGenerator extends FunSuiteLike {
       .generateSkewedSequence(Math.pow(10, 6).toInt)
       .sortBy(_._1)
       .map(_._2)
-    
+
     val listOfNumbersSorted = listOfNumbers.sorted.reverse
 
     val zipped = listOfNumbers.zip(listOfNumbersSorted)

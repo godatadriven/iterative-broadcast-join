@@ -6,6 +6,7 @@ import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 object DataGenerator {
 
@@ -16,26 +17,12 @@ object DataGenerator {
     * @param num number of elements in the sequence
     * @return as sequence of numbers
     */
-  def generateSkewedSequence(num: Int): List[(Int, Int)] = {
-
-    @tailrec
-    def generateSequence(i: Int = 0, result: Map[Int, Int]): Map[Int, Int] = {
-      val numOfOccurences = Math.round(
+  def generateSkewedSequence(num: Int): List[(Int, Int)] =
+    (0 to num).par.map(i =>
+      (i, Math.round(
         (num.toDouble - i.toDouble) / (i.toDouble + 1.0)
-      ).toInt
-
-      val updated = result.updated(i, numOfOccurences)
-
-      if (numOfOccurences > 1L) {
-        generateSequence(i + 1, updated)
-      } else {
-        updated
-      }
-    }
-
-    val emptyMap = Array.fill[Int](num)(1).zipWithIndex.map(_.swap).toMap
-    generateSequence(0, emptyMap).toList
-  }
+      ).toInt)
+    ).toList
 
   /**
     * Will generate a sequence of the input sample
@@ -64,6 +51,7 @@ object DataGenerator {
       .parallelize(skewedSequence, Config.numberOfPartitions)
       .flatMap(pair => skewDistribution(pair._1, pair._2))
       .map(key => Row(key))
+      .repartition(Config.numberOfPartitions)
 
     val dfLarge = spark.createDataFrame(rdd, schema)
 
