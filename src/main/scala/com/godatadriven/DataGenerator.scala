@@ -1,11 +1,8 @@
 package com.godatadriven
 
-import co.theasi.plotly._
 import com.godatadriven.common.Config
-import org.apache.spark.sql.types.{DoubleType, IntegerType, StructField, StructType}
-import org.apache.spark.sql.{Row, SaveMode}
-
-import scala.util.Random
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
+import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
 object DataGenerator {
 
@@ -34,9 +31,7 @@ object DataGenerator {
     Seq.fill(count)(key)
   }
 
-  def buildTestset(): Unit = {
-    val spark = Utils.getSpark
-
+  def buildTestset(spark: SparkSession): Unit = {
     def schema: StructType = StructType(
       StructField("key", IntegerType, nullable = false) :: Nil
     )
@@ -62,25 +57,24 @@ object DataGenerator {
       .mode(SaveMode.Overwrite)
       .save("table_large.parquet")
 
-    //    println(s"Number of rows: ${dfLarge.count()}")
-    //    println(s"Number of keys: ${dfLarge.distinct().count()}")
+    println(s"Number of rows: ${dfLarge.count()}")
 
     // Get an idea of the distribution, by dumping it into csv and load it into plotly
-    val dist =
-      spark
-        .read
-        .parquet("table_large.parquet")
-        .groupBy("key")
-        .count()
-        .map(row => row.getAs[Int](0) -> row.getAs[Long](1))
-        .rdd
-        .takeOrdered(1000)(Ordering[Int].on { x => x._1 })
-
-    val x = dist.map(_._1)
-    val y = dist.map(_._2.toDouble)
-    val plot = Plot().withScatter(x, y)
-
-    draw(plot, "iterative-broadcast-dist")
+    //    val dist =
+    //      spark
+    //        .read
+    //        .parquet("table_large.parquet")
+    //        .groupBy("key")
+    //        .count()
+    //        .map(row => row.getAs[Int](0) -> row.getAs[Long](1))
+    //        .rdd
+    //        .takeOrdered(1000)(Ordering[Int].on { x => x._1 })
+    //
+    //    val x = dist.map(_._1)
+    //    val y = dist.map(_._2.toDouble)
+    //    val plot = Plot().withScatter(x, y)
+    //
+    //    draw(plot, "iterative-broadcast-dist")
 
     spark
       .read

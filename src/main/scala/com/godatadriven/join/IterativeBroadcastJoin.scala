@@ -11,7 +11,7 @@ object IterativeBroadcastJoin extends JoinStrategy {
 
     dfMedium
       // Add a new column and make sure that it is \in [0, Config.numberOfPasses]
-      .withColumn("pass", floor(rand() * Config.numberOfPasses))
+      .withColumn("pass", floor(rand() * Config.broadcastIterations))
       .write
       .partitionBy("pass")
       .mode(SaveMode.Overwrite)
@@ -22,7 +22,7 @@ object IterativeBroadcastJoin extends JoinStrategy {
       .withColumn("label", lit(null))
       .withColumn("description", lit(null))
 
-    for (pass <- 0 until Config.numberOfPasses) {
+    for (pass <- 0 until Config.broadcastIterations) {
       val dfMediumSliced =
         spark
           .read

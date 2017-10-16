@@ -1,43 +1,39 @@
 package com.godatadriven
 
-import com.godatadriven.join.IterativeBroadcastJoin
-import org.apache.spark.sql.SaveMode
-import org.apache.spark.sql.functions._
+import com.godatadriven.common.Config
+import com.godatadriven.join.{IterativeBroadcastJoin, NormalJoin}
+import org.apache.spark.sql.SparkSession
 
 object RunTest {
-  def run() {
-    val spark = Utils.getSpark
+  def run(spark: SparkSession) {
 
-    val result = IterativeBroadcastJoin.join(
-      spark,
-      spark
-        .read
-        .load("table_large.parquet"),
-      spark
-        .read
-        .load("table_medium.parquet")
-    )
+    val result = Config.joinType match {
+      case "std" => NormalJoin.join(
+        spark,
+        spark
+          .read
+          .load("table_large.parquet"),
+        spark
+          .read
+          .load("table_medium.parquet")
+      )
+      case "itr" => IterativeBroadcastJoin.join(
+        spark,
+        spark
+          .read
+          .load("table_large.parquet"),
+        spark
+          .read
+          .load("table_medium.parquet")
+      )
+      case _ => throw new RuntimeException("Could not derive join strategy")
+    }
 
-    result
-      .write
-      .mode(SaveMode.Overwrite)
-      .save("table_result.parquet")
-
-    val dfRes = spark
-      .read
-      .parquet("table_result.parquet")
-
-    val nullValues = dfRes
-      .filter("id is null")
+    val nullValues = result
+      .filter("label is null")
       .count()
 
     // Make sure that the join went well
     assert(nullValues == 0)
-
-    dfRes
-      .groupBy("key")
-      .count()
-      .orderBy(desc("count"))
-      .show(22)
   }
 }

@@ -1,15 +1,27 @@
 package com.godatadriven
 
+import org.apache.spark.sql.SparkSession
+
 
 object Entry extends App {
 
+  val spark = SparkSession
+    .builder
+    .master("local[*]")
+    .appName("Example iterative broadcast join")
+    .getOrCreate()
+
+  // Tell Spark to don't be too chatty
+  spark.sparkContext.setLogLevel("WARN")
+
   args.headOption match {
-    case Some("generator") => DataGenerator.buildTestset()
-    case Some("benchmark") => RunTest.run()
+    case Some("generator") => DataGenerator.buildTestset(spark)
+    case Some("benchmark") => RunTest.run(spark)
     case _ => println("Not a valid option")
   }
+//
+//  System.out.println("Work done, press any key to terminate the Spark UI")
+//  scala.io.StdIn.readChar()
 
-  System.out.println("Work done, Wait to terminate the Spark UI")
-  // To keep the Spark UI alive :-)
-  Thread.sleep(1925000)
+  spark.stop()
 }

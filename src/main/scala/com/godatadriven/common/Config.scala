@@ -1,19 +1,21 @@
 package com.godatadriven.common
 
+import com.typesafe.config.{ConfigFactory}
+
 object Config {
-  val numberOfPasses = 3
+  private val conf = ConfigFactory.load
+
+  val broadcastIterations: Int = conf.getInt("join.broadcast.iterations")
 
   // The number of partitions
-  val numberOfPartitions: Int = 800
+  val numberOfPartitions: Int = conf.getInt("generator.partitions")
 
   // The number of rows
-  val numberOfKeys: Int = Math.pow(10, 7).toInt
+  val numberOfKeys: Int = conf.getInt("generator.keys")
 
-  val keysMultiplier: Int = Math.pow(10, 1).toInt
+  // The number of times the keys get duplicated,
+  // This controls the skewness
+  val keysMultiplier: Int = conf.getInt("generator.multiplier")
 
-  // The number of rows
-  val skewnessExponent: Int = 4
-
-  // Determines the skewness of the keys
-  val randomExponent: Int = 4
+  val joinType: String = conf.getString("join.type")
 }
