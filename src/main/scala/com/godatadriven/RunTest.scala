@@ -1,38 +1,40 @@
 package com.godatadriven
 
-import org.apache.spark.sql._
+import com.godatadriven.join.IterativeBroadcastJoin
+import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.functions._
 
 object RunTest {
   def run() {
     val spark = Utils.getSpark
 
-    def registerTable(name: String): Unit =
+    val result = IterativeBroadcastJoin.join(
+      spark,
       spark
         .read
-        .load(s"table_$name.parquet")
-        .createOrReplaceTempView(name)
+        .load("table_large.parquet"),
+      spark
+        .read
+        .load("table_medium.parquet")
+    )
 
-    registerTable("large")
-    registerTable("medium")
-
-    spark.sql(
-      """
-        |SELECT
-        | large.key           AS key,
-        | medium.label        AS label,
-        | medium.description  AS description
-        |FROM large
-        |JOIN medium ON medium.key = large.key
-      """.stripMargin)
+    result
       .write
       .mode(SaveMode.Overwrite)
-      .save("result.parquet")
+      .save("table_result.parquet")
 
-
-    spark
+    val dfRes = spark
       .read
-      .parquet("table_large.parquet")
+      .parquet("table_result.parquet")
+
+    val nullValues = dfRes
+      .filter("id is null")
+      .count()
+
+    // Make sure that the join went well
+    assert(nullValues == 0)
+
+    dfRes
       .groupBy("key")
       .count()
       .orderBy(desc("count"))

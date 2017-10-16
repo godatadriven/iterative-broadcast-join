@@ -1,8 +1,10 @@
 package com.godatadriven.common
 
 object Config {
+  val numberOfPasses = 3
+
   // The number of partitions
-  val numberOfPartitions: Int = 4000
+  val numberOfPartitions: Int = 800
 
   // The number of rows
   val numberOfKeys: Int = Math.pow(10, 7).toInt

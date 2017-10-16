@@ -1,9 +1,7 @@
 package com.godatadriven
 
 
-object IterativeBroadcastJoin extends App {
-
-  // sbt "run generator"
+object Entry extends App {
 
   args.headOption match {
     case Some("generator") => DataGenerator.buildTestset()
