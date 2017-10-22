@@ -1,39 +1,38 @@
 package com.godatadriven
 
 import com.godatadriven.common.Config
-import com.godatadriven.join.{IterativeBroadcastJoin, NormalJoin}
-import org.apache.spark.sql.SparkSession
+import com.godatadriven.dataframe.join.{IterativeBroadcastJoin, NormalJoin}
+import org.apache.spark.sql.{SaveMode, SparkSession}
 
 object RunTest {
-  def run(spark: SparkSession) {
+  def run(spark: SparkSession,
+          joinType: String = Config.joinType) {
 
-    val result = Config.joinType match {
+    val result = joinType match {
       case "std" => NormalJoin.join(
         spark,
         spark
           .read
-          .load("table_large.parquet"),
+          .load(Config.tableNameLarge),
         spark
           .read
-          .load("table_medium.parquet")
+          .load(Config.tableNameMedium)
       )
       case "itr" => IterativeBroadcastJoin.join(
         spark,
         spark
           .read
-          .load("table_large.parquet"),
+          .load(Config.tableNameLarge),
         spark
           .read
-          .load("table_medium.parquet")
+          .load(Config.tableNameMedium)
       )
       case _ => throw new RuntimeException("Could not derive join strategy")
     }
 
-    val nullValues = result
-      .filter("label is null")
-      .count()
-
-    // Make sure that the join went well
-    assert(nullValues == 0)
+    result
+      .write
+      .mode(SaveMode.Overwrite)
+      .parquet("result.parquet")
   }
 }

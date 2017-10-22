@@ -1,0 +1,60 @@
+package com.godatadriven.dataframe.join
+
+import com.godatadriven.SparkUtil
+import com.godatadriven.common.Config
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.{DataFrame, SparkSession}
+
+import scala.annotation.tailrec
+
+object IterativeBroadcastJoin extends JoinStrategy {
+
+  @tailrec
+  private def iterativeBroadcastJoin(spark: SparkSession,
+                                     result: DataFrame,
+                                     broadcast: DataFrame,
+                                     iteration: Int = 0): DataFrame =
+    if (iteration < Config.broadcastIterations) {
+      val tableName = s"tmp_broadcast_table_itr_$iteration.parquet"
+
+      val out = result.join(
+        broadcast.filter(col("pass") === lit(iteration)),
+        Seq("key"),
+        "left_outer"
+      ).select(
+        result("key"),
+
+        // Join in the label
+        coalesce(
+          result("label"),
+          broadcast("label")
+        ).as("label")
+      )
+
+      SparkUtil.dfWrite(out, tableName)
+
+      iterativeBroadcastJoin(
+        spark,
+        SparkUtil.dfRead(spark, tableName),
+        //out,
+        broadcast,
+        iteration + 1
+      )
+    } else result
+
+  override def join(spark: SparkSession,
+                    dfLarge: DataFrame,
+                    dfMedium: DataFrame): DataFrame = {
+    spark.conf.set("spark.sql.autoBroadcastJoinThreshold", 1024 * 1024 * 128)
+
+    broadcast(dfMedium)
+    iterativeBroadcastJoin(
+      spark,
+      dfLarge
+        .select("key")
+        .withColumn("label", lit(null)),
+      dfMedium
+    )
+  }
+
+}

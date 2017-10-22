@@ -1,8 +1,10 @@
 package com.godatadriven.common
 
-import com.typesafe.config.{ConfigFactory}
+import com.typesafe.config.ConfigFactory
 
 object Config {
+  val broadcastIterationTableName: String = "tmp_broadcast_table.parquet"
+
   private val conf = ConfigFactory.load
 
   val broadcastIterations: Int = conf.getInt("join.broadcast.iterations")
@@ -18,4 +20,7 @@ object Config {
   val keysMultiplier: Int = conf.getInt("generator.multiplier")
 
   val joinType: String = conf.getString("join.type")
+
+  val tableNameLarge = "table_large.parquet"
+  val tableNameMedium = "table_medium.parquet"
 }

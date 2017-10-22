@@ -1,24 +1,37 @@
 package com.godatadriven
 
 import com.godatadriven.common.Config
-import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
-import org.apache.spark.sql.{Row, SaveMode, SparkSession}
+import org.apache.spark.sql.{SaveMode, SparkSession}
+
+import scala.util.Random
 
 object DataGenerator {
+
+  case class Key(key: Int)
+
+  case class KeyLabel(key: Int, label: String, pass: Int)
 
   /**
     * Generates a sequence of numbers, for example num = 22 would generate:
     * Array(22, 10, 6, 4, 3, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
     *
-    * @param num number of elements in the sequence
+    * @param numberOfKeys number of elements in the sequence
     * @return as sequence of numbers
     */
-  def generateSkewedSequence(num: Int): List[(Int, Int)] =
-    (0 to num).par.map(i =>
+  def generateSkewedSequence(numberOfKeys: Int): List[(Int, Int)] =
+    (0 to numberOfKeys).par.map(i =>
       (i, Math.round(
-        (num.toDouble - i.toDouble) / (i.toDouble + 1.0)
+        (numberOfKeys.toDouble - i.toDouble) / (i.toDouble + 1.0)
       ).toInt)
     ).toList
+
+  def numberOfRows(numberOfKeys: Int, keysMultiplier: Int): Long =
+    (0 to numberOfKeys).map(i =>
+      Math.round(
+        (numberOfKeys.toDouble - i.toDouble) / (i.toDouble + 1.0)
+      )
+    ).sum * keysMultiplier
+
 
   /**
     * Will generate a sequence of the input sample
@@ -31,33 +44,27 @@ object DataGenerator {
     Seq.fill(count)(key)
   }
 
-  def buildTestset(spark: SparkSession): Unit = {
-    def schema: StructType = StructType(
-      StructField("key", IntegerType, nullable = false) :: Nil
-    )
+  def buildTestset(spark: SparkSession,
+                   numberOfKeys: Int = Config.numberOfKeys,
+                   keysMultiplier: Int = Config.keysMultiplier,
+                   numberOfPartitions: Int = Config.numberOfPartitions): Unit = {
 
     import spark.implicits._
 
-    val skewedSeq = generateSkewedSequence(Config.numberOfKeys)
+    println(s"Generating ${numberOfRows(numberOfKeys, keysMultiplier)} rows")
 
-    val skewedSequence =
-      (0 until Config.keysMultiplier).flatMap(_ => skewedSeq)
-
-    val rdd = spark
+    spark
       .sparkContext
-      .parallelize(skewedSequence, Config.numberOfPartitions)
+      .parallelize(generateSkewedSequence(numberOfKeys), numberOfPartitions)
+      .flatMap(list => (0 to keysMultiplier).map(_ => list))
+      .repartition(numberOfPartitions)
       .flatMap(pair => skewDistribution(pair._1, pair._2))
-      .map(row => Row(row))
-
-    val dfLarge = spark.createDataFrame(rdd, schema)
-
-    dfLarge
-      .repartition(Config.numberOfPartitions)
+      .toDS()
+      .map(Key)
+      .repartition(numberOfPartitions)
       .write
       .mode(SaveMode.Overwrite)
       .save("table_large.parquet")
-
-    println(s"Number of rows: ${dfLarge.count()}")
 
     // Get an idea of the distribution, by dumping it into csv and load it into plotly
     //    val dist =
@@ -79,12 +86,23 @@ object DataGenerator {
     spark
       .read
       .parquet("table_large.parquet")
+      .as[Int]
       .distinct()
-      .map(row => (row.getAs[Int](0), s"label-${row.get(0)}", s"description telling something about id ${row.get(0)}"))
-      .toDF("key", "label", "description")
+      .mapPartitions(rows => {
+        val r = new Random()
+        rows.map(key =>
+          KeyLabel(
+            key,
+            s"Description for entry $key, that can be anything",
+            // Already preallocate the pass of the broadcast iteration here
+            Math.floor(r.nextDouble() * Config.broadcastIterations).toInt
+          )
+        )
+      })
+      .repartition(numberOfPartitions)
       .write
       .mode(SaveMode.Overwrite)
-      .save("table_medium.parquet")
+      .parquet("table_medium.parquet")
   }
 
 }
