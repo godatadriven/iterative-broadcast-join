@@ -21,6 +21,7 @@ object UniformDataGenerator extends DataGenerator {
 
     spark
       .range(numRows)
+      .repartition(numberOfPartitions)
       .mapPartitions(rows => {
         val r = new Random()
         rows.map(_ => Key(Math.ceil(r.nextDouble() * numberOfKeys).toInt))
