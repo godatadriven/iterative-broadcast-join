@@ -14,7 +14,7 @@ object SkewedDataGenerator extends DataGenerator {
 
     println(s"Generating ${numberOfRows(numberOfKeys, keysMultiplier)} rows")
 
-    spark
+    val df = spark
       .sparkContext
       .parallelize(generateSkewedSequence(numberOfKeys), numberOfPartitions)
       .flatMap(list => (0 to keysMultiplier).map(_ => list))
@@ -23,6 +23,10 @@ object SkewedDataGenerator extends DataGenerator {
       .toDS()
       .map(Key)
       .repartition(numberOfPartitions)
+    
+    assert(df.count() == Config.numberOfKeys)
+
+    df
       .write
       .mode(SaveMode.Overwrite)
       .save(Config.getLargeTableName("skewed"))

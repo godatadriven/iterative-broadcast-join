@@ -31,7 +31,7 @@ trait DataGenerator {
 
     import spark.implicits._
 
-    spark
+    val df = spark
       .read
       .parquet("table_large.parquet")
       .as[Int]
@@ -48,6 +48,10 @@ trait DataGenerator {
         )
       })
       .repartition(numberOfPartitions)
+
+    assert(df.count() == Config.numberOfKeys)
+
+    df
       .write
       .mode(SaveMode.Overwrite)
       .parquet(tableName)
