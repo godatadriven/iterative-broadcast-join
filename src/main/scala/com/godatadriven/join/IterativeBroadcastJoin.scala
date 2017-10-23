@@ -42,6 +42,7 @@ object IterativeBroadcastJoin extends JoinStrategy {
     } else result
 
   override def join(spark: SparkSession,
+                    join: JoinType,
                     dfLarge: DataFrame,
                     dfMedium: DataFrame): DataFrame = {
     broadcast(dfMedium)

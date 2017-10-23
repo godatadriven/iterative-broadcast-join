@@ -10,7 +10,7 @@ trait DataGenerator {
 
 
   def numberOfRows(numberOfKeys: Int, keysMultiplier: Int): Long =
-    generateSkewedSequence(numberOfKeys).map(_._2).sum * keysMultiplier
+    generateSkewedSequence(numberOfKeys).map(_._2).sum * keysMultiplier.toLong
 
   /**
     * Generates a sequence of numbers, for example num = 22 would generate:
