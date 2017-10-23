@@ -20,12 +20,11 @@ object UniformDataGenerator extends DataGenerator {
     println(s"Generating $numRows rows")
 
     spark
-      .range(1, numRows)
+      .range(numRows)
       .mapPartitions(rows => {
         val r = new Random()
-        rows.map(_ => Math.ceil(r.nextDouble() * numberOfKeys).toInt)
+        rows.map(_ => Key(Math.ceil(r.nextDouble() * numberOfKeys).toInt))
       })
-      .map(Key)
       .repartition(numberOfPartitions)
       .write
       .mode(SaveMode.Overwrite)
