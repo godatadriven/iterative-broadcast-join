@@ -8,6 +8,14 @@ import org.apache.spark.sql.{SaveMode, SparkSession}
 
 object RunBenchmark extends App {
 
+  def time[R](block: => R): R = {
+    val t0 = System.nanoTime()
+    val result = block // call-by-name
+    val t1 = System.nanoTime()
+    println("Elapsed time: " + (t1 - t0) / 1000 / 1000 / 1000 + " sec")
+    result
+  }
+
 
   def runTest(generator: DataGenerator,
               joinType: JoinType,
@@ -19,32 +27,36 @@ object RunBenchmark extends App {
 
     println(name)
 
+
     val spark = getSparkSession(name)
 
-    val out = joinType match {
-      case _: SortMergeJoinType => NormalJoin.join(
-        spark,
-        spark
-          .read
-          .load(generator.getLargeTableName),
-        spark
-          .read
-          .load(generator.getMediumTableName)
-      )
-      case _: IterativeBroadcastJoinType => IterativeBroadcastJoin.join(
-        spark,
-        spark
-          .read
-          .load(generator.getLargeTableName),
-        spark
-          .read
-          .load(generator.getMediumTableName)
-      )
-    }
+    time {
 
-    out.write
-      .mode(SaveMode.Overwrite)
-      .parquet(tableNameOutput)
+      val out = joinType match {
+        case _: SortMergeJoinType => NormalJoin.join(
+          spark,
+          spark
+            .read
+            .load(generator.getLargeTableName),
+          spark
+            .read
+            .load(generator.getMediumTableName)
+        )
+        case _: IterativeBroadcastJoinType => IterativeBroadcastJoin.join(
+          spark,
+          spark
+            .read
+            .load(generator.getLargeTableName),
+          spark
+            .read
+            .load(generator.getMediumTableName)
+        )
+      }
+
+      out.write
+        .mode(SaveMode.Overwrite)
+        .parquet(tableNameOutput)
+    }
 
     spark.stop()
   }
