@@ -1,7 +1,8 @@
 package com.godatadriven
 
+import com.godatadriven.benchmark.Benchmark
 import com.godatadriven.common.Config
-import com.godatadriven.generator.SkewedDataGenerator
+import com.godatadriven.generator.{SkewedDataGenerator, UniformDataGenerator}
 import org.apache.spark.sql.SparkSession
 
 
@@ -9,6 +10,7 @@ object RunBenchmark extends App {
   def getSparkSession(appName: String = "Spark Application"): SparkSession = {
     val spark = SparkSession
       .builder
+      .master("local[*]")
       .appName(appName)
       .getOrCreate()
 
@@ -23,38 +25,8 @@ object RunBenchmark extends App {
     spark
   }
 
-  (0 to 10).foreach(step => {
+  Benchmark.runBenchmark(iterations = 10, UniformDataGenerator)
 
-    // Increment the multiplier stepwise
-    val multiplier = Config.keysMultiplier + (step * Config.keysMultiplier)
+  Benchmark.runBenchmark(iterations = 10, SkewedDataGenerator)
 
-    val rows = SkewedDataGenerator.numberOfRows(Config.numberOfKeys, multiplier)
-
-    var spark = getSparkSession(s"Generate dataset with ${Config.numberOfKeys} keys, $rows rows")
-
-    // cache java.lang.OutOfMemoryError
-    SkewedDataGenerator.buildTestset(
-      spark,
-      keysMultiplier = multiplier
-    )
-
-    spark.stop()
-    spark = null
-    spark = getSparkSession(s"Iterative broadcast join $multiplier")
-
-    RunTest.run(spark, "itr")
-
-    spark.stop()
-    spark = null
-    spark = getSparkSession(s"Sort-merge-join $multiplier")
-
-    try {
-      RunTest.run(spark, "std")
-    } catch {
-      case e: Exception => println(s"Got ${e}")
-    }
-
-    spark.stop()
-    spark = null
-  })
 }

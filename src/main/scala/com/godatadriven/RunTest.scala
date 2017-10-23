@@ -1,32 +1,34 @@
 package com.godatadriven
 
 import com.godatadriven.common.Config
-import com.godatadriven.dataframe.join.NormalJoin
 import com.godatadriven.join.{IterativeBroadcastJoin, NormalJoin}
 import org.apache.spark.sql.{SaveMode, SparkSession}
 
 object RunTest {
   def run(spark: SparkSession,
-          joinType: String = Config.joinType) {
+          joinType: String = Config.joinType,
+          tableNameMedium: String,
+          tableNameLarge: String,
+          tableNameOutput: String) {
 
     val result = joinType match {
       case "std" => NormalJoin.join(
         spark,
         spark
           .read
-          .load(Config.tableNameLarge),
+          .load(tableNameLarge),
         spark
           .read
-          .load(Config.tableNameMedium)
+          .load(tableNameMedium)
       )
       case "itr" => IterativeBroadcastJoin.join(
         spark,
         spark
           .read
-          .load(Config.tableNameLarge),
+          .load(tableNameLarge),
         spark
           .read
-          .load(Config.tableNameMedium)
+          .load(tableNameMedium)
       )
       case _ => throw new RuntimeException("Could not derive join strategy")
     }
@@ -34,6 +36,6 @@ object RunTest {
     result
       .write
       .mode(SaveMode.Overwrite)
-      .parquet("result.parquet")
+      .parquet(tableNameOutput)
   }
 }
