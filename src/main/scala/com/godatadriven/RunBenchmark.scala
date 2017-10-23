@@ -52,49 +52,52 @@ object RunBenchmark extends App {
 
   def runBenchmark(dataGenerator: DataGenerator,
                    iterations: Int = 8,
-                   outputTable: String = "result.parquet"): Unit =
-    (0 to iterations).foreach(step => {
+                   outputTable: String = "result.parquet"): Unit = {
+    val originalMultiplier = Config.keysMultiplier
 
-      val keys = Config.numberOfKeys
+    (0 to iterations)
+      .map(step => originalMultiplier + (step * originalMultiplier))
+      .foreach(multiplier => {
 
-      // Increment the multiplier stepwise
-      val multiplier = Config.keysMultiplier + (step * Config.keysMultiplier)
+        val keys = Config.numberOfKeys
+        Config.keysMultiplier = multiplier
 
-      Config.keysMultiplier = multiplier
+        // Generate uniform data and benchmark
+        val rows = dataGenerator.numberOfRows()
 
-      // Generate uniform data and benchmark
-      val rows = dataGenerator.numberOfRows()
+        val spark = getSparkSession(s"${dataGenerator.getName}: Generate dataset with $keys keys, $rows rows")
+        dataGenerator.buildTestset(
+          spark,
+          keysMultiplier = multiplier
+        )
+        spark.stop()
 
-      val spark = getSparkSession(s"${dataGenerator.getName}: Generate dataset with $keys keys, $rows rows")
-      dataGenerator.buildTestset(
-        spark,
-        keysMultiplier = multiplier
-      )
-      spark.stop()
+        Config.numberOfBroadcastPasses = 2
 
-      Config.numberOfBroadcastPasses = 2
+        runTest(
+          dataGenerator,
+          new IterativeBroadcastJoinType,
+          outputTable
+        )
 
-      runTest(
-        dataGenerator,
-        new IterativeBroadcastJoinType,
-        outputTable
-      )
+        Config.numberOfBroadcastPasses = 3
 
-      Config.numberOfBroadcastPasses = 3
+        runTest(
+          dataGenerator,
+          new IterativeBroadcastJoinType,
+          outputTable
+        )
 
-      runTest(
-        dataGenerator,
-        new IterativeBroadcastJoinType,
-        outputTable
-      )
+        runTest(
+          dataGenerator,
+          new SortMergeJoinType,
+          outputTable
+        )
+      })
 
-      runTest(
-        dataGenerator,
-        new SortMergeJoinType,
-        outputTable
-      )
-
-    })
+    // Reset global Config
+    Config.keysMultiplier = originalMultiplier
+  }
 
   def getSparkSession(appName: String = "Spark Application"): SparkSession = {
     val spark = SparkSession
