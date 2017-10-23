@@ -1,7 +1,8 @@
 package com.godatadriven
 
 import com.godatadriven.common.Config
-import com.godatadriven.dataframe.join.{IterativeBroadcastJoin, NormalJoin}
+import com.godatadriven.dataframe.join.NormalJoin
+import com.godatadriven.join.{IterativeBroadcastJoin, NormalJoin}
 import org.apache.spark.sql.{SaveMode, SparkSession}
 
 object RunTest {

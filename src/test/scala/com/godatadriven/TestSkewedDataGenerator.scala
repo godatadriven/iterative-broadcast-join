@@ -1,12 +1,13 @@
 package com.godatadriven
 
+import com.godatadriven.generator.SkewedDataGenerator
 import org.scalatest.FunSuiteLike
 
 
-class TestDataGenerator extends FunSuiteLike {
+class TestSkewedDataGenerator extends FunSuiteLike {
 
   test("The generated sequence should be decreasing") {
-    val listOfNumbers = DataGenerator
+    val listOfNumbers = SkewedDataGenerator
       .generateSkewedSequence(Math.pow(10, 6).toInt)
       .sortBy(_._1)
       .map(_._2)
@@ -21,7 +22,7 @@ class TestDataGenerator extends FunSuiteLike {
   test("The data should be skewed based on the key and count") {
     val key = 19
     val count = 25
-    val res = DataGenerator.skewDistribution(key, count)
+    val res = SkewedDataGenerator.skewDistribution(key, count)
 
     assert(res.length == count)
     assert(res.forall(_ == key))

@@ -13,5 +13,3 @@ libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.1"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
 libraryDependencies += "com.typesafe" % "config" % "1.3.1"
-
-libraryDependencies += "co.theasi" %% "plotly" % "0.2.0"

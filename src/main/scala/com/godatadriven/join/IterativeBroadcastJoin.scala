@@ -1,4 +1,4 @@
-package com.godatadriven.dataframe.join
+package com.godatadriven.join
 
 import com.godatadriven.SparkUtil
 import com.godatadriven.common.Config
@@ -36,7 +36,6 @@ object IterativeBroadcastJoin extends JoinStrategy {
       iterativeBroadcastJoin(
         spark,
         SparkUtil.dfRead(spark, tableName),
-        //out,
         broadcast,
         iteration + 1
       )
@@ -45,8 +44,6 @@ object IterativeBroadcastJoin extends JoinStrategy {
   override def join(spark: SparkSession,
                     dfLarge: DataFrame,
                     dfMedium: DataFrame): DataFrame = {
-    spark.conf.set("spark.sql.autoBroadcastJoinThreshold", 1024 * 1024 * 128)
-
     broadcast(dfMedium)
     iterativeBroadcastJoin(
       spark,

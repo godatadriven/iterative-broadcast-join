@@ -1,11 +1,11 @@
-package com.godatadriven
+package com.godatadriven.generator
 
 import com.godatadriven.common.Config
 import org.apache.spark.sql.{SaveMode, SparkSession}
 
 import scala.util.Random
 
-object DataGenerator {
+object SkewedDataGenerator {
 
   case class Key(key: Int)
 
@@ -16,22 +16,17 @@ object DataGenerator {
     * Array(22, 10, 6, 4, 3, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
     *
     * @param numberOfKeys number of elements in the sequence
-    * @return as sequence of numbers
+    * @return tuple of (key, num), where key is the unique key and num is the times it will be repeated
     */
   def generateSkewedSequence(numberOfKeys: Int): List[(Int, Int)] =
     (0 to numberOfKeys).par.map(i =>
-      (i, Math.round(
+      (i, Math.ceil(
         (numberOfKeys.toDouble - i.toDouble) / (i.toDouble + 1.0)
       ).toInt)
     ).toList
 
   def numberOfRows(numberOfKeys: Int, keysMultiplier: Int): Long =
-    (0 to numberOfKeys).map(i =>
-      Math.round(
-        (numberOfKeys.toDouble - i.toDouble) / (i.toDouble + 1.0)
-      )
-    ).sum * keysMultiplier
-
+    generateSkewedSequence(numberOfKeys).map(_._2).sum * keysMultiplier
 
   /**
     * Will generate a sequence of the input sample
@@ -40,9 +35,7 @@ object DataGenerator {
     * @param count count the number of repetitions
     * @return
     */
-  def skewDistribution(key: Int, count: Int): Seq[Int] = {
-    Seq.fill(count)(key)
-  }
+  def skewDistribution(key: Int, count: Int): Seq[Int] = Seq.fill(count)(key)
 
   def buildTestset(spark: SparkSession,
                    numberOfKeys: Int = Config.numberOfKeys,

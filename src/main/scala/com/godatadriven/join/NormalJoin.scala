@@ -1,4 +1,4 @@
-package com.godatadriven.dataframe.join
+package com.godatadriven.join
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
