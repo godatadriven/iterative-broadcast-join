@@ -25,8 +25,7 @@ object RunBenchmark extends App {
     spark
   }
 
-  Benchmark.runBenchmark(iterations = 10, UniformDataGenerator)
+  Benchmark.runBenchmark(iterations = 8, UniformDataGenerator)
 
-  Benchmark.runBenchmark(iterations = 10, SkewedDataGenerator)
-
+  Benchmark.runBenchmark(iterations = 8, SkewedDataGenerator)
 }
