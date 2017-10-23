@@ -17,14 +17,14 @@ object SkewedDataGenerator extends DataGenerator {
     val df = spark
       .sparkContext
       .parallelize(generateSkewedSequence(numberOfKeys), numberOfPartitions)
-      .flatMap(list => (0 to keysMultiplier).map(_ => list))
+      .flatMap(list => (0 until keysMultiplier).map(_ => list))
       .repartition(numberOfPartitions)
       .flatMap(pair => skewDistribution(pair._1, pair._2))
       .toDS()
       .map(Key)
       .repartition(numberOfPartitions)
-    
-    assert(df.count() == Config.numberOfKeys)
+
+    assert(df.count() == numberOfRows())
 
     df
       .write

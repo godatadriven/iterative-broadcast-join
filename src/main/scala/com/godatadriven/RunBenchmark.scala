@@ -128,6 +128,6 @@ object RunBenchmark extends App {
     spark
   }
 
-  runBenchmark(UniformDataGenerator)
+//  runBenchmark(UniformDataGenerator)
   runBenchmark(SkewedDataGenerator)
 }
