@@ -3,8 +3,6 @@ package com.godatadriven.generator
 import com.godatadriven.common.Config
 import org.apache.spark.sql.{SaveMode, SparkSession}
 
-import scala.util.Random
-
 object UniformDataGenerator extends DataGenerator {
 
 
@@ -20,12 +18,10 @@ object UniformDataGenerator extends DataGenerator {
     println(s"Generating $numRows rows")
 
     spark
-      .range(numRows)
+      .range(keysMultiplier)
       .repartition(numberOfPartitions)
-      .mapPartitions(rows => {
-        val r = new Random()
-        rows.map(_ => Key(Math.ceil(r.nextDouble() * numberOfKeys).toInt))
-      })
+      .flatMap(_ => 0 to numberOfKeys)
+      .map(Key)
       .repartition(numberOfPartitions)
       .write
       .mode(SaveMode.Overwrite)
