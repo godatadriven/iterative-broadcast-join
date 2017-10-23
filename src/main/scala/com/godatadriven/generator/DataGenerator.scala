@@ -9,7 +9,8 @@ import scala.util.Random
 trait DataGenerator {
 
 
-  def numberOfRows(numberOfKeys: Int, keysMultiplier: Int): Long =
+  def numberOfRows(numberOfKeys: Int = Config.numberOfKeys,
+                   keysMultiplier: Int = Config.keysMultiplier): Long =
     generateSkewedSequence(numberOfKeys).map(_._2).sum * keysMultiplier.toLong
 
   /**
@@ -42,7 +43,7 @@ trait DataGenerator {
             key,
             s"Description for entry $key, that can be anything",
             // Already preallocate the pass of the broadcast iteration here
-            Math.floor(r.nextDouble() * Config.broadcastIterations).toInt
+            Math.floor(r.nextDouble() * Config.numberOfBroadcastPasses).toInt
           )
         )
       })

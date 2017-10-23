@@ -14,7 +14,7 @@ object IterativeBroadcastJoin extends JoinStrategy {
                                      result: DataFrame,
                                      broadcast: DataFrame,
                                      iteration: Int = 0): DataFrame =
-    if (iteration < Config.broadcastIterations) {
+    if (iteration < Config.numberOfBroadcastPasses) {
       val tableName = s"tmp_broadcast_table_itr_$iteration.parquet"
 
       val out = result.join(
@@ -42,7 +42,6 @@ object IterativeBroadcastJoin extends JoinStrategy {
     } else result
 
   override def join(spark: SparkSession,
-                    join: JoinType,
                     dfLarge: DataFrame,
                     dfMedium: DataFrame): DataFrame = {
     broadcast(dfMedium)

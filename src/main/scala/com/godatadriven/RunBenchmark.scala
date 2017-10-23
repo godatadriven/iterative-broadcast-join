@@ -9,41 +9,50 @@ import org.apache.spark.sql.{SaveMode, SparkSession}
 object RunBenchmark extends App {
 
 
-  def runTest(spark: SparkSession,
+  def runTest(generator: DataGenerator,
               joinType: JoinType,
-              tableNameMedium: String,
-              tableNameLarge: String,
               tableNameOutput: String) {
+
+    val rows = generator.numberOfRows()
+
+    val name = s"${generator.getName}: $joinType, passes=${Config.numberOfBroadcastPasses}, keys=${Config.numberOfKeys}, multiplier=${Config.keysMultiplier}, rows=$rows"
+
+    println(name)
+
+    val spark = getSparkSession(name)
+
     val out = joinType match {
-      case join: SortMergeJoinType => NormalJoin.join(
+      case _: SortMergeJoinType => NormalJoin.join(
         spark,
-        join,
         spark
           .read
-          .load(tableNameLarge),
+          .load(generator.getLargeTableName),
         spark
           .read
-          .load(tableNameMedium)
+          .load(generator.getMediumTableName)
       )
-      case join: IterativeBroadcastJoinType => IterativeBroadcastJoin.join(
+      case _: IterativeBroadcastJoinType => IterativeBroadcastJoin.join(
         spark,
-        join,
         spark
           .read
-          .load(tableNameLarge),
+          .load(generator.getLargeTableName),
         spark
           .read
-          .load(tableNameMedium)
+          .load(generator.getMediumTableName)
       )
     }
 
     out.write
       .mode(SaveMode.Overwrite)
       .parquet(tableNameOutput)
+
+    spark.stop()
   }
 
 
-  def runBenchmark(dataGenerator: DataGenerator, iterations: Int = 8): Unit =
+  def runBenchmark(dataGenerator: DataGenerator,
+                   iterations: Int = 8,
+                   outputTable: String = "result.parquet"): Unit =
     (0 to iterations).foreach(step => {
 
       val keys = Config.numberOfKeys
@@ -51,42 +60,40 @@ object RunBenchmark extends App {
       // Increment the multiplier stepwise
       val multiplier = Config.keysMultiplier + (step * Config.keysMultiplier)
 
+      Config.keysMultiplier = multiplier
+
       // Generate uniform data and benchmark
-      val rows = dataGenerator.numberOfRows(Config.numberOfKeys, multiplier)
+      val rows = dataGenerator.numberOfRows()
 
-      var spark = getSparkSession(s"${dataGenerator.getName}: Generate dataset with $keys keys, $rows rows")
-
+      val spark = getSparkSession(s"${dataGenerator.getName}: Generate dataset with $keys keys, $rows rows")
       dataGenerator.buildTestset(
         spark,
         keysMultiplier = multiplier
       )
-
       spark.stop()
-      spark = null
-      spark = getSparkSession(s"${dataGenerator.getName}: Iterative broadcast join keys=$keys, multiplier=$multiplier, rows=$rows")
+
+      Config.numberOfBroadcastPasses = 2
 
       runTest(
-        spark,
-        new IterativeBroadcastJoinType(2),
-        dataGenerator.getMediumTableName,
-        dataGenerator.getLargeTableName,
-        "result.parquet"
+        dataGenerator,
+        new IterativeBroadcastJoinType,
+        outputTable
       )
 
-      spark.stop()
-      spark = null
-      spark = getSparkSession(s"${dataGenerator.getName}: Sort-merge-join keys=$keys, multiplier=$multiplier, rows=$rows")
+      Config.numberOfBroadcastPasses = 3
 
       runTest(
-        spark,
+        dataGenerator,
+        new IterativeBroadcastJoinType,
+        outputTable
+      )
+
+      runTest(
+        dataGenerator,
         new SortMergeJoinType,
-        dataGenerator.getMediumTableName,
-        dataGenerator.getLargeTableName,
-        "result.parquet"
+        outputTable
       )
 
-      spark.stop()
-      spark = null
     })
 
   def getSparkSession(appName: String = "Spark Application"): SparkSession = {
